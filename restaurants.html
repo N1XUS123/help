@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Управление ресторанами{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-building"></i> Управление ресторанами сети</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRestaurantModal">
+        <i class="bi bi-plus-circle"></i> Добавить ресторан
+    </button>
+</div>
+
+<!-- Статистика по ресторанам -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6>Всего ресторанов</h6>
+            <h3>{{ restaurants|length }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
+            <h6>Активных</h6>
+            <h3>{{ restaurants|selectattr('is_active', 'equalto', true)|list|length }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+            <h6>Всего сотрудников</h6>
+            <h3>{{ total_staff }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+            <h6>Блюд в меню</h6>
+            <h3>{{ total_menu_items }}</h3>
+        </div>
+    </div>
+</div>
+
+<!-- Карточки ресторанов -->
+<div class="row">
+    {% for restaurant in restaurants %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-shop"></i> {{ restaurant.name }}
+                </h5>
+                <span class="badge {% if restaurant.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                    {{ "Активен" if restaurant.is_active else "Неактивен" }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><i class="bi bi-geo-alt"></i> {{ restaurant.address or "Адрес не указан" }}</p>
+                        <p><i class="bi bi-telephone"></i> {{ restaurant.phone or "Телефон не указан" }}</p>
+                        <p><i class="bi bi-envelope"></i> {{ restaurant.email or "Email не указан" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><i class="bi bi-people"></i> Сотрудников: <span class="badge bg-info">{{ restaurant_stats[restaurant.id].staff_count }}</span></p>
+                        <p><i class="bi bi-menu-button"></i> Блюд: <span class="badge bg-info">{{ restaurant_stats[restaurant.id].menu_count }}</span></p>
+                        <p><i class="bi bi-cart"></i> Заказов сегодня: <span class="badge bg-info">{{ restaurant_stats[restaurant.id].today_orders }}</span></p>
+                        <p><i class="bi bi-currency-ruble"></i> Выручка сегодня: <span class="badge bg-info">{{ restaurant_stats[restaurant.id].today_revenue }} ₽</span></p>
+                    </div>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-sm btn-outline-primary" onclick="editRestaurant({{ restaurant.id }})">
+                        <i class="bi bi-pencil"></i> Редактировать
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="toggleRestaurant({{ restaurant.id }})">
+                        <i class="bi bi-power"></i> {{ "Деактивировать" if restaurant.is_active else "Активировать" }}
+                    </button>
+                    <button class="btn btn-sm btn-outline-info" onclick="viewRestaurantDetails({{ restaurant.id }})">
+                        <i class="bi bi-graph-up"></i> Статистика
+                    </button>
+                </div>
+            </div>
+            <div class="card-footer bg-white text-muted">
+                <small><i class="bi bi-clock"></i> Создан: {{ restaurant.created_at[:10] }}</small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Модальное окно добавления ресторана -->
+<div class="modal fade" id="addRestaurantModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить новый ресторан</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_restaurant') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название ресторана</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Адрес</label>
+                        <input type="text" class="form-control" name="address">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Телефон</label>
+                        <input type="text" class="form-control" name="phone">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно статистики ресторана -->
+<div class="modal fade" id="restaurantStatsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Детальная статистика ресторана</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="statsContent">
+                <!-- Загружается через AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function toggleRestaurant(id) {
+    fetch('/toggle_restaurant/' + id, {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) location.reload();
+        });
+}
+
+function editRestaurant(id) {
+    // Заглушка для редактирования
+    alert('Редактирование ресторана #' + id);
+}
+
+function viewRestaurantDetails(id) {
+    fetch('/restaurant_stats/' + id)
+        .then(response => response.json())
+        .then(data => {
+            let html = `
+                <h4>${data.name}</h4>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Заказы по дням</h6>
+                        <canvas id="ordersChart"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Популярные блюда</h6>
+                        <table class="table">
+                            <tr><th>Блюдо</th><th>Кол-во</th></tr>
+                            ${data.popular_items.map(item => `<tr><td>${item.name}</td><td>${item.count}</td></tr>`).join('')}
+                        </table>
+                    </div>
+                </div>
+            `;
+            document.getElementById('statsContent').innerHTML = html;
+
+            var myModal = new bootstrap.Modal(document.getElementById('restaurantStatsModal'));
+            myModal.show();
+        });
+}
+
+// Поиск по ресторанам
+document.getElementById('searchRestaurant')?.addEventListener('keyup', function(e) {
+    let search = e.target.value.toLowerCase();
+    document.querySelectorAll('.card').forEach(card => {
+        let title = card.querySelector('.card-header h5')?.textContent.toLowerCase() || '';
+        card.closest('.col-md-6').style.display = title.includes(search) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

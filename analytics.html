@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Аналитика продаж{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-graph-up"></i> Аналитика продаж и статистика</h2>
+    <div>
+        <select class="form-select d-inline-block w-auto" id="periodSelect">
+            <option value="day">Сегодня</option>
+            <option value="week">Неделя</option>
+            <option value="month" selected>Месяц</option>
+            <option value="year">Год</option>
+        </select>
+        <button class="btn btn-primary" onclick="exportReport()">
+            <i class="bi bi-download"></i> Экспорт отчета
+        </button>
+    </div>
+</div>
+
+<!-- Ключевые показатели -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6 class="text-muted">Выручка</h6>
+            <h3>{{ "%.2f"|format(stats.total_revenue) }} ₽</h3>
+            <small class="text-success">+{{ stats.revenue_growth }}%</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6 class="text-muted">Заказов</h6>
+            <h3>{{ stats.total_orders }}</h3>
+            <small class="text-success">+{{ stats.orders_growth }}%</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6 class="text-muted">Средний чек</h6>
+            <h3>{{ "%.2f"|format(stats.avg_order) }} ₽</h3>
+            <small>+{{ stats.avg_growth }}%</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6 class="text-muted">Посетителей</h6>
+            <h3>{{ stats.total_visitors }}</h3>
+            <small>+{{ stats.visitors_growth }}%</small>
+        </div>
+    </div>
+</div>
+
+<!-- Графики -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Динамика продаж</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="salesChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Распределение по категориям</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Детальная статистика -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">🔥 Популярные блюда</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Блюдо</th>
+                            <th>Категория</th>
+                            <th>Продано</th>
+                            <th>Выручка</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in stats.popular_items %}
+                        <tr>
+                            <td><strong>{{ item.name }}</strong></td>
+                            <td>
+                                {% if item.category == 'appetizer' %}
+                                    <span class="badge bg-info">Закуска</span>
+                                {% elif item.category == 'main' %}
+                                    <span class="badge bg-primary">Основное</span>
+                                {% elif item.category == 'dessert' %}
+                                    <span class="badge bg-warning">Десерт</span>
+                                {% else %}
+                                    <span class="badge bg-success">Напиток</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.revenue }} ₽</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">📊 Статистика по ресторанам</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Ресторан</th>
+                            <th>Заказы</th>
+                            <th>Выручка</th>
+                            <th>Загрузка</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rest in stats.restaurant_stats %}
+                        <tr>
+                            <td>{{ rest.name }}</td>
+                            <td>{{ rest.orders }}</td>
+                            <td>{{ rest.revenue }} ₽</td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar" style="width: {{ rest.load_percent }}%">
+                                        {{ rest.load_percent }}%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Часы пик и анализ по времени -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">⏰ Часы пик (загрузка по часам)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="hourlyChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">📅 Дни недели</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="weeklyChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Дополнительные метрики -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">📈 Детальные метрики</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center p-3">
+                            <h6>Конверсия</h6>
+                            <h3>{{ stats.conversion_rate }}%</h3>
+                            <small>посетители → заказы</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3">
+                            <h6>Возвращаемость</h6>
+                            <h3>{{ stats.return_rate }}%</h3>
+                            <small>постоянных клиентов</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3">
+                            <h6>Среднее время</h6>
+                            <h3>{{ stats.avg_prep_time }} мин</h3>
+                            <small>приготовления</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3">
+                            <h6>Отмены</h6>
+                            <h3>{{ stats.cancellation_rate }}%</h3>
+                            <small>от всех заказов</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+// График продаж
+const salesCtx = document.getElementById('salesChart').getContext('2d');
+new Chart(salesCtx, {
+    type: 'line',
+    data: {
+        labels: {{ stats.dates|tojson }},
+        datasets: [{
+            label: 'Выручка',
+            data: {{ stats.revenue_by_date|tojson }},
+            borderColor: '#8B4513',
+            backgroundColor: 'rgba(139, 69, 19, 0.1)',
+            tension: 0.4,
+            fill: true
+        }, {
+            label: 'Количество заказов',
+            data: {{ stats.orders_by_date|tojson }},
+            borderColor: '#27ae60',
+            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { beginAtZero: true, position: 'left' }, y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false } } }
+    }
+});
+
+// Круговая диаграмма категорий
+const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+new Chart(categoryCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ stats.category_labels|tojson }},
+        datasets: [{
+            data: {{ stats.category_data|tojson }},
+            backgroundColor: ['#8B4513', '#27ae60', '#f39c12', '#3498db'],
+            borderWidth: 0
+        }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } } }
+});
+
+// Почасовая загрузка
+const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+new Chart(hourlyCtx, {
+    type: 'bar',
+    data: {
+        labels: ['8-10', '10-12', '12-14', '14-16', '16-18', '18-20', '20-22', '22-24'],
+        datasets: [{
+            label: 'Количество заказов',
+            data: {{ stats.hourly_data|tojson }},
+            backgroundColor: '#8B4513'
+        }]
+    },
+    options: { scales: { y: { beginAtZero: true } } }
+});
+
+// Дни недели
+const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+new Chart(weeklyCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+        datasets: [{
+            label: 'Выручка',
+            data: {{ stats.weekly_data|tojson }},
+            backgroundColor: '#27ae60'
+        }]
+    }
+});
+
+function exportReport() {
+    let period = document.getElementById('periodSelect').value;
+    window.location.href = '/export_report/' + period;
+}
+</script>
+{% endblock %}
+{% endblock %}

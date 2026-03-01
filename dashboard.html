@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Главная панель{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Приветствие -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-success">
+                <h4 class="alert-heading">Добро пожаловать, {{ current_user.username }}!</h4>
+                <p>Ваша роль: <strong>{{ current_user.role }}</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Рестораны</h5>
+                    <h2 class="card-text">{{ restaurants_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Пользователи</h5>
+                    <h2 class="card-text">{{ users_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Блюда в меню</h5>
+                    <h2 class="card-text">{{ menu_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Заказов сегодня</h5>
+                    <h2 class="card-text">{{ orders_today }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Быстрые действия -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Быстрые действия</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin_panel') }}" class="btn btn-primary">
+                            <i class="bi bi-gear"></i> Перейти в админ-панель
+                        </a>
+                        <a href="#" class="btn btn-outline-success">
+                            <i class="bi bi-plus-circle"></i> Создать заказ
+                        </a>
+                        <a href="#" class="btn btn-outline-info">
+                            <i class="bi bi-graph-up"></i> Просмотреть отчеты
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Последние действия</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Здесь будет отображаться история действий</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

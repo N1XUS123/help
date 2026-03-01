@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2>Панель администратора</h2>
+        <p class="text-muted">Добро пожаловать, {{ current_user.username }}!</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-building"></i> Рестораны</h5>
+                <h2>{{ total_restaurants }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-people"></i> Пользователи</h5>
+                <h2>{{ total_users }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-cart"></i> Всего заказов</h5>
+                <h2>{{ total_orders }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-calendar-day"></i> Заказов сегодня</h5>
+                <h2>{{ today_orders }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Активные заказы</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>№ заказа</th>
+                            <th>Стол</th>
+                            <th>Сумма</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in active_orders %}
+                        <tr>
+                            <td>{{ order.order_number }}</td>
+                            <td>{{ order.table_number }}</td>
+                            <td>{{ order.total_amount }} ₽</td>
+                            <td><span class="badge bg-warning">Готовится</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Быстрые действия</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('menu') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle"></i> Добавить блюдо в меню
+                    </a>
+                    {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('users') }}" class="btn btn-outline-success">
+                        <i class="bi bi-person-plus"></i> Добавить пользователя
+                    </a>
+                    <a href="{{ url_for('restaurants') }}" class="btn btn-outline-info">
+                        <i class="bi bi-building-add"></i> Добавить ресторан
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
