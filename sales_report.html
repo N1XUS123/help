@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Учёт продаж и отчётность{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="bi bi-bar-chart-line"></i> Учёт продаж и отчётность</h2>
+            <p class="text-muted">Фильтры применяются на стороне сервера при отправке формы.</p>
+        </div>
+    </div>
+
+
+    <div class="card mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Фильтр данных</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('sales_report') }}" id="filterForm">
+                <div class="row align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Период с</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control datepicker" name="date_from" 
+                                   placeholder="ДД . ММ . ГГГГ" value="{{ request.args.get('date_from', '') }}">
+                            <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">по</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control datepicker" name="date_to" 
+                                   placeholder="ДД . ММ . ГГГГ" value="{{ request.args.get('date_to', '') }}">
+                            <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Блюда</label>
+                        <select class="form-select" name="performance">
+                            <option value="all" {% if request.args.get('performance', 'all') == 'all' %}selected{% endif %}>Все блюда</option>
+                            {% for perf in performances %}
+                            <option value="{{ perf.id }}" {% if request.args.get('performance') == perf.id|string %}selected{% endif %}>{{ perf.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Применить
+                            </button>
+                            <a href="{{ url_for('sales_report') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Результаты -->
+    {% if sales_data %}
+    <div class="row">
+        <div class="col-md-12">
+
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-white bg-success">
+                        <div class="card-body">
+                            <h5 class="card-title">Всего продаж</h5>
+                            <h2>{{ sales_data.total_sales }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body">
+                            <h5 class="card-title">Выручка</h5>
+                            <h2>{{ sales_data.total_revenue }} ₽</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-warning">
+                        <div class="card-body">
+                            <h5 class="card-title">Средний чек</h5>
+                            <h2>{{ sales_data.avg_revenue }} ₽</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-primary">
+                        <div class="card-body">
+                            <h5 class="card-title">Кол-во билетов</h5>
+                            <h2>{{ sales_data.total_tickets }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-table"></i> Детализация продаж</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Спектакль</th>
+                                <th>Кол-во билетов</th>
+                                <th>Сумма</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in sales_data.details %}
+                            <tr>
+                                <td>{{ sale.date }}</td>
+                                <td>{{ sale.performance_name }}</td>
+                                <td>{{ sale.tickets_count }}</td>
+                                <td>{{ sale.amount }} ₽</td>
+                                <td>
+                                    {% if sale.status == 'completed' %}
+                                        <span class="badge bg-success">Завершено</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">В обработке</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInputs = document.querySelectorAll('.datepicker');
+    dateInputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.placeholder = 'гггг-мм-дд';
+        });
+        input.addEventListener('blur', function() {
+            this.placeholder = 'ДД . ММ . ГГГГ';
+        });
+    });
+});
+</script>
+{% endblock %}
